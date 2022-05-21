@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css"
+    />
+    <!-- 로컬 CSS  -->
+    <link rel="stylesheet" href="./style.css" />
+    <link rel="stylesheet" href="./coordinate.css" />
+    <link rel="stylesheet" href="modalStyle.css" />
+
+    <!-- 로컬 JS -->
+    <script type="text/javascript" src="modal.js"></script>
+
+    <!-- 폰트 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Open+Sans&display=swap"
+      rel="stylesheet"
+    />
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <title>Weather Coordinator</title>
+  </head>
+  <body>
+    <!-- 사실상 title 헤더 부분 -->
+    <div class="title">
+      <div class="titleDiv">
+        <div class="titleLine"></div>
+        <p class="titleText">코디 추천</p>
+        <p class="titleDesc">
+          대충설명 대충설명대충설명대충설명 대충설명 대충설명
+        </p>
+      </div>
+    </div>
+    <div class="genderSelect">
+      <label>
+        <input
+          class="genderInput"
+          name="gender"
+          type="radio"
+          value="M"
+          id="manRadio"
+          checked="true"
+        />
+        남
+      </label>
+      <label>
+        <input
+          class="genderInput"
+          name="gender"
+          type="radio"
+          value="W"
+          id="womanRadio"
+        />
+        여
+      </label>
+      <button class="genderSelectButton" onclick="getFashion()">확인</button>
+    </div>
+    <div class="fashionDiv" >
+      <div class="fassionRow">
+        <button type="button" id="modalBtn1">
+          <img class="img1" src="" height="500" />
+        </button>
+        <div class="blackBg"></div>
+        <div class="modalWrap" id="modal1">
+          <div class="modalClose" id="close1"><img src="https://img.icons8.com/metro/26/000000/close-window.png"></div>
+          <div class="modalImage">
+            <img class="cloth1" src="1.jpg" height="300" />
+          </div>
+          <div class="inform" id="comment1">
+          </div>
+          <div class="link">
+            <a
+              id="link1";
+              href=""
+              target="_blank"
+              >더 알아보기</a
+            >
+          </div>
+        </div>
+        <button type="button" id="modalBtn2">
+          <img class="img2" src="" height="500" />
+        </button>
+        <div class="blackBg"></div>
+        <div class="modalWrap" id="modal2">
+          <div class="modalClose" id="close2"><img src="https://img.icons8.com/metro/26/000000/close-window.png"></div>
+          <div class="modalImage">
+            <img class="cloth2" src="1.jpg" height="300" />
+          </div>
+          <div class="inform" id="comment2">
+          </div>
+          <div class="link">
+            <a
+              id="link2";
+              href=""
+              target="_blank"
+              >더 알아보기</a
+            >
+          </div>
+        </div>
+      </div>
+      <div class="fassionRow">
+        <button type="button" id="modalBtn3">
+          <img class="img3" src="" height="500" />
+        </button>
+        <div class="blackBg"></div>
+        <div class="modalWrap" id="modal3">
+          <div class="modalClose" id="close3"><img src="https://img.icons8.com/metro/26/000000/close-window.png"></div>
+          <div class="modalImage">
+            <img class="cloth3" src="1.jpg" height="300" />
+          </div>
+          <div class="inform" id="comment3">
+          </div>
+          <div class="link">
+            <a
+              id="link3";
+              href=""
+              target="_blank"
+              >더 알아보기</a
+            >
+          </div>
+        </div>
+        <button type="button" id="modalBtn4">
+          <img class="img4" src="" height="500" />
+        </button>
+        <div class="blackBg"></div>
+        <div class="modalWrap" id="modal4">
+          <div class="modalClose" id="close4"><img src="https://img.icons8.com/metro/26/000000/close-window.png" ></div>
+          <div class="modalImage">
+            <img class="cloth4" src="1.jpg" height="300" />
+          </div>
+          <div class="inform" id="comment4">
+          </div>
+          <div class="link">
+            <a
+              id="link4";
+              href=""
+              target="_blank"
+              >더 알아보기</a
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      let temp_c = 20;
+      let condition = "sunny";
+      let gender = "W";
+
+      let fasionList = [];
+      let fasion = {
+        imgSrc: "",
+        page: "", // page to more info
+        comment: "",
+      };
+
+      
+
+      function getFashion() {
+
+        //show image
+        document.querySelector(".fashionDiv").style.visibility = "visible";
+
+        //get checked value in radios
+        let path = "src/";
+        gender = document.querySelector("input[name='gender']:checked").value;
+
+        //get temperature and condition from previous page.
+        tmp = location.href.split("?");
+        if (tmp.length > 1) {
+          let data = tmp[1].split("/");
+          temp_c = Number(data[0]).toFixed(1);
+          condition = data[1];
+          condition = condition.toLowerCase();
+        }
+
+        //Todo : iterate src directory with gender, temp_c, condition and get FasionList
+        if(gender === "M") path += "M/";
+        else if(gender === "W") path += "W/";
+
+        if(temp_c < 4) path += "04/";
+        else if(temp_c < 9) path += "05/";
+        else if(temp_c < 12) path += "09/";
+        else if(temp_c < 17) path += "12/";
+        else if(temp_c < 20) path += "17/";
+        else if(temp_c < 23) path += "20/";
+        else if(temp_c < 28) path += "23/";
+        else "28/"; 
+        
+        path += condition;
+
+        //Todo : create img tags with Fasion.imgSrc and add listener setModalVisible()
+        //also, set img class to index, 1 to 4
+        //Todo : put img tag to fasionDiv with fasion.imgSrc
+        for(let i = 1; i < 5; i++) {
+          let imgClass = ".img" + i;
+          let modalClass = ".cloth" + i;
+          let image = document.querySelector(imgClass);
+          let modal = document.querySelector(modalClass);
+          if(gender === "M") fasion.imgSrc = path + "/" + i + ".jpg";
+          else if(gender === "W") fasion.imgSrc = path + "/" + i + ".jpeg";          
+          image.src = fasion.imgSrc;
+          modal.src = fasion.imgSrc;
+        }
+
+        //Setting by getting information and src from .txt
+        for(let i=1; i < 5; i++) {
+          let src = path +"/"+ i + ".txt";
+          fetch(src)
+            .then((response) => response.text())
+            .then(function(text){
+              let content = text;
+              content = content.split(/\r\n|\n/);
+              fasion.page = content[0];
+              fasion.comment = content[1];
+              document.getElementById("comment"+i).innerText = fasion.comment;
+              document.getElementById("link"+i).href = fasion.page;
+            }); 
+        }
+      }
+      /*
+      //onclickListener for img tags in fasionDiv
+      function setModalVisible(id) {
+        //Todo : get Fasion in FasionList with img id
+        //Todo : set modal img src, a href, inform to fasion's info
+        //Todo : set modal visible
+      }*/
+
+    </script>
+  </body>
+</html>

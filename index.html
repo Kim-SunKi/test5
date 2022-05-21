@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css"
+    />
+    <link rel="stylesheet" href="./style.css" />
+    <link rel="stylesheet" href="./index.css" />
+
+    <!-- 폰트 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Open+Sans&display=swap"
+      rel="stylesheet"
+    />
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <title>Weather Coordinator</title>
+  </head>
+
+  <body>
+    <!-- 사실상 title 헤더 부분 -->
+    <div class="title">
+      <div class="titleDiv">
+        <div class="titleLine"></div>
+        <p class="titleText">What to wear? 오늘 뭐 입지?</p>
+        <p class="titleDesc">
+          Recommended service for fashion coordination according to temperature
+        </p>
+      </div>
+    </div>
+
+    <div class="weather">
+      <div class="current">
+        <div class="currentWeather">
+          <!-- <img
+            class="currentWeatherImage"
+            style="font-size: 200px"
+          ></img> -->
+          <i class="bi currentWeatherImage" style="font-size: 200px"></i>
+          <p class="currentWeatherText">기온 : 도</p>
+        </div>
+        <div class="particulate">
+          <i class="particulateImage" style="font-size: 200px"></i>
+          <p class="particulateText">미세먼지 :</p>
+        </div>
+      </div>
+
+      <div class="hourlyDiv">
+        <div class="hourly">
+          <div class="hourlyText">
+            <i class="bi bi-alarm-fill"></i> 시간별 일기예보
+          </div>
+          <table class="hourlyTable"></table>
+        </div>
+      </div>
+    </div>
+    <div class="buttonDiv">
+      <button
+        type="button"
+        class="coordinateButton btn-10"
+        onclick="location.href='./coordinate.html'"
+      >
+        CLICK ME
+      </button>
+    </div>
+    <script>
+      //keys of current and hourly. can be modify.
+      const currentKeys = ["temp_c", "feelslike_c", "condition", "air_quality"];
+      const hourlyKeys = [
+        "time",
+        "temp_c",
+        "feelslike_c",
+        "condition",
+        "chance_of_rain",
+      ];
+      const particulateIndexDic = {
+        1: "좋음",
+        2: "보통",
+        3: "주의",
+        4: "나쁨",
+        5: "매우 나쁨",
+        6: "심각",
+      };
+      const particulateEmojiDic = {
+        1: "bi bi-emoji-laughing-fill",
+        2: "bi bi-emoji-smile-fill",
+        3: "bi bi-emoji-neutral-fill",
+        4: "bi bi-emoji-frown-fill",
+        5: "bi bi-emoji-angry-fill",
+        6: "bi bi-emoji-dizzy-fill",
+      };
+      //object with current weather info.
+
+      /* basic structure of current
+    current = {
+        temp_c : int, temperature in celsius
+        feelslike_c : int, temperature we feels like in celsius
+        condition : {
+            text : string, 'Sunny', 'Fog' etc
+            icon : string, url of icon
+            code :
+        }
+        air_quality : {
+            us-epa-index : integer,
+                            1 means Good
+                            2 means Moderate
+                            3 means Unhealthy for sensitive group
+                            4 means Unhealthy
+                            5 means Very Unhealthy
+                            6 means Hazardous
+        }
+    }
+*/
+      //list that contains hourly.
+      //it contains 48 hourly, from today's 00:00 to tomorrow 23:00 by hour
+
+      /*  basic structure of hourly.
+    hourly = {
+        time : string, "yyyy-mm-dd hh:00"
+        temp_c : int, temperature in celsius
+        feelslike_c : int, temperature we feels like in celsius
+        condition : {
+            text : string, 'Sunny', 'Fog' etc
+            icon : string, url of icon
+            code : 
+        }
+        chance_of_rain : float, 0 ~ 1
+    }
+*/
+      //add callback function which is called when location is changed.
+      if (navigator.geolocation) {
+        navigator.geolocation.watchPosition(
+          (pos) => {
+            getWeatherInfo(pos.coords.latitude + "," + pos.coords.longitude);
+          },
+          (err) => {
+            console.log(err);
+            getWeatherInfo("Seoul");
+          }
+        );
+      }
+      // get weather of seoul when location is not detected.
+      else getWeatherInfo("Seoul");
+
+      //update current and hourlyList with weather api
+      function getWeatherInfo(q) {
+        let url = "http://api.weatherapi.com/v1";
+        const type = "forecast";
+        const key = "99c358fd2f104901838154458220905";
+        const days = "2";
+        const aqi = "yes";
+        const alerts = "no";
+
+        url += "/" + type + ".json";
+        url += "?key=" + key;
+        url += "&q=" + q;
+        url += "&days=" + days;
+        url += "&aqi=" + aqi;
+        url += "&alerts=" + alerts;
+
+        axios
+          .get(url)
+          .then((res) => {
+            let current = {};
+            let hourlyList = [];
+            let currentRaw = res.data.current;
+            let forecastdays = res.data.forecast.forecastday;
+
+            getCurrent(current, currentRaw);
+            forecastdays.forEach((forecastday) => {
+              forecastday.hour.forEach((hourlyRaw) => {
+                getHourly(hourlyList, hourlyRaw);
+              });
+            });
+
+            // fill here with updating weather info
+            let conditionText = "";
+            // 부트스트랩 아이콘으로 이미지 바꾸기
+            let weatherIconLegnth = String(current.condition.icon).length;
+            let numOfWeatherIcon = String(current.condition.icon).slice(
+              weatherIconLegnth - 7,
+              weatherIconLegnth - 4
+            );
+
+            // document.querySelector(".currentWeatherImage").src = "https:" + current.condition.icon;
+            // console.log("https:" + current.condition.icon)
+            // console.log(numOfWeatherIcon)
+            let weatherImg = document.querySelector(".currentWeatherImage");
+            // cloud + thunder
+            if (
+              numOfWeatherIcon === "395" ||
+              numOfWeatherIcon === "392" ||
+              numOfWeatherIcon === "389" ||
+              numOfWeatherIcon === "386" ||
+              numOfWeatherIcon === "200"
+            ) {
+              weatherImg.classList.add("bi-cloud-lightning-fill");
+              conditionText = "Cloudy";
+            }
+            // snow
+            else if (
+              numOfWeatherIcon === "377" ||
+              numOfWeatherIcon === "374" ||
+              numOfWeatherIcon === "368" ||
+              numOfWeatherIcon === "365" ||
+              numOfWeatherIcon === "362" ||
+              numOfWeatherIcon === "317" ||
+              numOfWeatherIcon === "320" ||
+              numOfWeatherIcon === "323" ||
+              numOfWeatherIcon === "326" ||
+              numOfWeatherIcon === "227" ||
+              numOfWeatherIcon === "179"
+            ) {
+              weatherImg.classList.add("bi-cloud-snow-fill");
+              conditionText = "Rainy";
+              // rain (light)
+            } else if (
+              numOfWeatherIcon === "359" ||
+              numOfWeatherIcon === "356" ||
+              numOfWeatherIcon === "311" ||
+              numOfWeatherIcon === "296" ||
+              numOfWeatherIcon === "293" ||
+              numOfWeatherIcon === "182" ||
+              numOfWeatherIcon === "176"
+            ) {
+              weatherImg.classList.add("bi-cloud-rain-fill");
+              conditionText = "Rainy";
+              // rain (heavy)
+            } else if (
+              numOfWeatherIcon === "308" ||
+              numOfWeatherIcon === "305" ||
+              numOfWeatherIcon === "302" ||
+              numOfWeatherIcon === "299"
+            ) {
+              weatherImg.classList.add("bi-cloud-rain-heavy-fill");
+              conditionText = "Rainy";
+            }
+            // drizzle
+            else if (
+              numOfWeatherIcon === "284" ||
+              numOfWeatherIcon === "281" ||
+              numOfWeatherIcon === "266" ||
+              numOfWeatherIcon === "263" ||
+              numOfWeatherIcon === "185"
+            ) {
+              weatherImg.classList.add("bi-cloud-drizzle-fill");
+              conditionText = "Cloudy";
+            }
+            // fog
+            else if (
+              numOfWeatherIcon === "248" ||
+              numOfWeatherIcon === "260" ||
+              numOfWeatherIcon === "230" ||
+              numOfWeatherIcon === "143"
+            ) {
+              weatherImg.classList.add("bi-cloud-fog-fill");
+              conditionText = "Cloudy";
+            }
+            // just cloud
+            else if (
+              numOfWeatherIcon === "122" ||
+              numOfWeatherIcon === "119" ||
+              numOfWeatherIcon === "116"
+            ) {
+              weatherImg.classList.add("bi-cloud-fill");
+              conditionText = "Cloudy";
+            } else {
+              if (String(current.condition.icon).includes("day")) {
+                weatherImg.classList.add("bi-brightness-high-fill");
+                conditionText = "Sunny";
+              } else {
+                weatherImg.classList.add("bi-moon-fill");
+                conditionText = "Sunny";
+              }
+            }
+
+            document.querySelector(".currentWeatherText").textContent =
+              "기온 : " + current.temp_c + "°C";
+            document.querySelector(".particulateImage").className =
+              particulateEmojiDic[current.air_quality["us-epa-index"]] +
+              " particulateImage";
+            document.querySelector(".particulateText").textContent =
+              "미세먼지 : " +
+              particulateIndexDic[current.air_quality["us-epa-index"]];
+
+            getHourlyTable(hourlyList);
+
+            document.querySelector(".coordinateButton").onclick = () =>
+              (location.href = `./coordinate.html?${current.temp_c}/${conditionText}`);
+          })
+          .catch((error) => {
+            console.error(error);
+          });
+      }
+    </script>
+
+    <script>
+      function getHourlyTable(hourlyList) {
+        let hourlyTable = document.querySelector(".hourlyTable");
+        
+        while (hourlyTable.rows.length != 0) hourlyTable.deleteRow(-1);
+
+        let hourRow = hourlyTable.insertRow(); // hour
+        let conditionRow = hourlyTable.insertRow(); // condition
+        let temp_cRow = hourlyTable.insertRow(); // temp_c
+        let corRow = hourlyTable.insertRow(); // chance of rain
+
+        hourlyList.forEach((hourly) => {
+          let hourCell = hourRow.insertCell();
+          hourCell.innerText = hourly.time.split(" ")[1];
+
+          let conditionCell = conditionRow.insertCell();
+          let conditionIconUrl = "https:" + hourly.condition.icon;
+          conditionCell.innerHTML = `<img class="hourlyWeatherImage" src="${
+            "https:" + hourly.condition.icon
+          }">`;
+
+          let temp_cCell = temp_cRow.insertCell();
+          temp_cCell.innerText = hourly.temp_c + "°C";
+
+          // let corCell = corRow.insertCell();
+          // corCell.innerText = hourly.chance_of_rain + "%";
+        });
+      }
+    </script>
+
+    <script>
+      //simply taking info we need from raw data.
+      function getCurrent(current, currentRaw) {
+        currentKeys.forEach((key) => {
+          if (typeof currentRaw[key] == "object")
+            current[key] = Object.assign(currentRaw[key]);
+          else current[key] = currentRaw[key];
+        });
+      }
+      function getHourly(hourlyList, hourlyRaw) {
+        let hourlyTmp = {};
+        hourlyKeys.forEach((key) => {
+          if (typeof hourlyRaw[key] == "object")
+            hourlyTmp[key] = Object.assign(hourlyRaw[key]);
+          else hourlyTmp[key] = hourlyRaw[key];
+        });
+        hourlyList.push(hourlyTmp);
+      }
+    </script>
+  </body>
+</html>
